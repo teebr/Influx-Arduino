@@ -28,7 +28,7 @@ void setup()
     Serial.println("WiFi connected!");
     influx.configure(INFLUX_DATABASE,INFLUX_IP); //third argument (port number) defaults to 8086
     // influx.authorize(INFLUX_USER,INFLUX_PASS); //if you have set the Influxdb .conf variable auth-enabled to true, uncomment this
-    influx.addCertificate(ROOT_CERT); //uncomment if you have generated a CA cert and copied it into InfluxCert.hpp
+    // influx.addCertificate(ROOT_CERT); //uncomment if you have generated a CA cert and copied it into InfluxCert.hpp
     Serial.print("Using HTTPS: ");
     Serial.println(influx.isSecure()); //will be true if you've added the InfluxCert.hpp file.
 } 
@@ -56,6 +56,6 @@ void loop()
 
     while ((micros() - startTime) < DELAY_TIME_US)
     {
-      //wait until it's time for next reading
+      //wait until it's time for next reading. Consider using a low power mode if this will be a while.
     }
 }
