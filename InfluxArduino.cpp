@@ -1,4 +1,4 @@
-#include <HTTPClient.h>
+#include <ArduinoHttpClient.h>
 #include "InfluxArduino.hpp"
 
 InfluxArduino::InfluxArduino()
