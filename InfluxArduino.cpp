@@ -1,4 +1,4 @@
-#include <HTTPClient.h>
+#include <WiFi101.h>
 #include "InfluxArduino.hpp"
 
 InfluxArduino::InfluxArduino()
@@ -20,23 +20,17 @@ void InfluxArduino::configure(const char database[],const char host[],const uint
     _port = port;
 }
 
-void InfluxArduino::addCertificate(const char cert[])
+void InfluxArduino::useTLS(const bool tf)
 {
-    //copy these strings to private class pointers for future use
-
-    _cert = new char[strlen(cert)+1];
-    strcpy(_cert,cert);
-    _isSecure = true;
+    _isSecure = tf;
 }
 
-void InfluxArduino::authorize(const char username[], const char password[])
+void InfluxArduino::authorize(const char userPassb64[])
 {
     //copy these strings to private class pointers for future use
 
-    _username = new char[strlen(username)+1];
-    strcpy(_username,username);
-    _password = new char[strlen(password)+1];
-    strcpy(_password,password);
+    _authToken = new char[strlen(userPassb64)+1];
+    strcpy(_authToken,userPassb64);
     _isAuthorised = true;
 
 }
@@ -48,25 +42,25 @@ bool InfluxArduino::write(const char *measurement,const char *fieldString)
 
 bool InfluxArduino::write(const char *measurement,const char *tagString,const char *fieldString)
 {   
-    HTTPClient http;
-    char uri[32];
-    sprintf(uri, "/write?db=%s", _database);
+    WiFiClient client;
 
+    bool isConnected = false;
     if(_isSecure)
     {
-       http.begin(_host, _port, uri, _cert);
+        isConnected = client.connectSSL(_host,_port);
     }
     else
     {
-        http.begin(_host, _port, uri);
+        isConnected = client.connect(_host,_port);
     }
-    http.addHeader("Content-Type", "text/plain"); // not sure what influx is looking for but this works?
 
-    if(_isAuthorised)
+    if(!isConnected)
     {
-        http.setAuthorization(_username,_password);
+        //TODO cause of no connection?
+        _latestResponse = -1;
+        return false;
     }
-
+    
     char writeBuf[512]; // ¯\_(ツ)_/¯ 
     if(strlen(tagString) > 0)
     {
@@ -78,10 +72,79 @@ bool InfluxArduino::write(const char *measurement,const char *tagString,const ch
         //no tags
         sprintf(writeBuf,"%s %s",measurement,fieldString); //no comma between tags and fields
     }
-    Serial.println(writeBuf);
-    _latestResponse = http.POST(writeBuf);
-    http.end();
-    return _latestResponse == 204;
+
+    //manually assemble request.
+    client.print("POST /write?db=");
+    client.print(_database);
+    client.println(" HTTP/1.1");
+
+    client.println("Connection: close");
+    
+    client.print("Host: ");
+    client.print(_host);
+    client.print(":");
+    client.println(_port);
+
+    // client.println("Content-Type: application/x-www-form-urlencoded");
+    client.println("Content-Type: text/plain");
+    client.println("User-Agent: ATWINC1500 with InfluxArduino");
+    if(_isAuthorised)
+    {
+        client.print("Authorization: Basic ");
+        client.println(_authToken);
+    }
+    client.print("Content-Length: ");
+    client.println(strlen(writeBuf));
+
+    client.println();
+    client.println(writeBuf);
+
+    /*
+     * Now, wait until we receive a response from influx.
+     */
+    unsigned long sendTime = micros(); //to test for timeout
+    while (client.available() < 12) //the HTTP code (hopefully 204) is in bytes 10-12
+    {
+        if(!client.connected())
+        {
+            _latestResponse = -4; //use same as ESP32 httpclient for timeout
+            return false;
+        }
+        
+        if ((micros() - sendTime) > _RESPONSE_TIMEOUT_US)
+        {   
+            client.stop();
+            _latestResponse = -11; //use same as ESP32 httpclient for timeout
+            return false;
+        }               
+    }
+
+    //we've got enough bytes, now parse for response code
+    unsigned int readCount = 0;
+    int responseCode = -1;
+    while (client.available())
+    {
+        int c = (int)client.read() -48; //-48: from ASCII to number
+        readCount++;
+        
+        //get HTTP return code (hopefully 204) from bytes 10-12. Ugly but avoids using string conversions
+        if (readCount == 10)
+        {
+            responseCode = c * 100;
+        }
+        else if (readCount == 11)
+        {
+            responseCode += c * 10;
+        }
+        else if (readCount == 12)
+        {
+            responseCode += c;
+            break;
+        }
+    }
+     client.stop(); //I see no reason to give a shit about the rest of the response
+    _latestResponse = responseCode;
+    return responseCode == 204;
 }
 
 int InfluxArduino::getResponse()

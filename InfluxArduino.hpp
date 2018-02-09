@@ -10,11 +10,11 @@ public:
   //specify the database, IP address and port (optional) for the database
   void configure(const char database[], const char host[], const uint16_t port = 8086);
 
-  //if you require authorization to write to InfluxDB, set the username and password here
-  void authorize(const char username[],const char password[]);
+  //if you require authorization to write to InfluxDB, set the username and password here. For the WiFiClient class of the WiFi101 library, this must be of the format <username>:<password> encoded in base64.
+  void authorize(const char userPassb64[]);
 
-  //if you are using HTTPS, specify your CA certificate:
-  void addCertificate(const char ROOT_CERT[]);
+  // specify whether to use TLS (HTTP) or no encryption. The certificate must be uploaded to firmare using the command line tool
+  void useTLS(bool tf);
 
   /*
    * write tags and fields to the measurement. These will likely be made by sprintf,
@@ -45,7 +45,7 @@ public:
 
 /*
  * TODO: method ping() to test configuration values.
- * curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE mydb"
+ * curl -i -XPOST http://localhost:8086/ping"
  */
 
 /*
@@ -58,12 +58,13 @@ private:
   char* _host;
   uint16_t _port;
 
-  char* _username;
-  char* _password;
+  char* _authToken;
   char* _cert;
   bool _isAuthorised = false;
   bool _isSecure = false;
   int _latestResponse; //storing the latest response in case user wants to inspect
+
+  unsigned long _RESPONSE_TIMEOUT_US = 5 * 1000 * 1000; //maximum time to wait for response from Influx
 };
 
 #endif
