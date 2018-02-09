@@ -18,10 +18,10 @@ Unlike for the ESP32, the root certificate is flashed to the firmware. However, 
 
 
 1. first convert the .crt file to a binary cer file (not base64 encoding for text):
-`openssl base64 -d -in </location/of/cert/name>.crt  -out certs/,<name>.cer`
+`openssl base64 -d -in </location/of/cert/name>.crt  -out certs/<name>.cer`
 
 1. now upload (obviously change the port name to whatever you need)
-./winc1500-uploader -port /dev/cu.usbmodemXXXX -certs certs
+`./winc1500-uploader -port /dev/cu.usbmodemXXXX -certs certs`
 
 ### Encoding authentication details
 To add authentication, need to convert to base64:
