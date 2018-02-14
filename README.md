@@ -5,8 +5,5 @@ For more details on how this came about, see this [Medium post](https://medium.c
 
 This has been tested with an ESP32: any board should work as long as it has an HTTPClient library and an encryption library (e.g mbed TLS) to go with it.
 
-<br>
-**UPDATE**
-There is now an [m0-wifi should](https://github.com/teebr/Influx-Arduino/tree/m0-wifi) which should work when an ATCWINC1500 WiFi module is used (see the branch readme for more info). I'm currently working out how to merge the two as the WiFiClient classes are quite different.
 
-
+There is now [another branch](https://github.com/teebr/Influx-Arduino/tree/m0-wifi) which should work when an ATCWINC1500 WiFi module is used (see the branch readme for more info). I'm currently working out how to merge the two as the WiFiClient classes are quite different.
