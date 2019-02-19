@@ -1,7 +1,7 @@
 #include <HTTPClient.h>
 #include "InfluxArduino.hpp"
 
-InfluxArduino::InfluxArduino()
+InfluxArduino::InfluxArduino(bool debug)
 {
 }
 
@@ -43,7 +43,7 @@ void InfluxArduino::authorize(const char username[], const char password[])
 
 bool InfluxArduino::write(const char *measurement,const char *fieldString)
 {
-    write(measurement,"",fieldString);
+    return write(measurement,"",fieldString);
 }
 
 bool InfluxArduino::write(const char *measurement,const char *tagString,const char *fieldString)
@@ -78,7 +78,7 @@ bool InfluxArduino::write(const char *measurement,const char *tagString,const ch
         //no tags
         sprintf(writeBuf,"%s %s",measurement,fieldString); //no comma between tags and fields
     }
-    Serial.println(writeBuf);
+    if(debug) Serial.println(writeBuf);
     _latestResponse = http.POST(writeBuf);
     http.end();
     return _latestResponse == 204;
