@@ -4,7 +4,11 @@
 class InfluxArduino
 {
 public:
-  InfluxArduino();
+
+  bool debug;
+
+  InfluxArduino(bool debug=false);
+
   ~InfluxArduino();
 
   //specify the database, IP address and port (optional) for the database
